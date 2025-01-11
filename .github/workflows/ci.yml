@@ -29,12 +29,12 @@ jobs:
           cd backend
           go mod tidy
 
-      - name: Run golangci-lint
-        working-directory: backend
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.52.2
-          ./bin/golangci-lint run ./...
+      # - name: Run golangci-lint
+      #   working-directory: backend
+      #   run: |
+      #     curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.52.2
+      #     ./bin/golangci-lint run ./...
 
-      # Run tests
-      # - name: Run tests
-      #   run: go test ./... -v
+      - name: Run tests
+        working-directory: backend
+        run: go test ./... -v

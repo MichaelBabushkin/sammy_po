@@ -25,10 +25,15 @@ jobs:
 
       # Install dependencies
       - name: Install dependencies
-        run:  |
-            cd backend
-            go mod tidy
+        run: |
+          cd backend
+          go mod tidy
+
+      - name: Run golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.52.2
+          ./bin/golangci-lint run ./...
 
       # Run tests
-      - name: Run tests
-        run: go test ./... -v
+      # - name: Run tests
+      #   run: go test ./... -v

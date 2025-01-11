@@ -1,0 +1,7 @@
+# Ignore these files and directories
+.git
+.github
+backend/bin
+backend/pkg
+node_modules
+*.log

@@ -1,39 +1,54 @@
 import React, { useState, useEffect } from "react";
+import "./App.css";
 
 function App() {
-  const [message, setMessage] = useState("");
+  const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchGreeting();
+    fetchMatches();
   }, []);
 
-  const fetchGreeting = async () => {
+  const fetchMatches = async () => {
     try {
-      const response = await fetch("/api/greeting"); // Changed to relative path
+      const response = await fetch("/api/matches");
       const data = await response.json();
-      setMessage(data.text);
+      setMatches(data);
       setLoading(false);
     } catch (err) {
-      console.error("Fetch error:", err); // Added error logging
-      setError("Failed to fetch greeting");
+      console.error("Fetch error:", err);
+      setError("Failed to fetch matches");
       setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="loading">Loading matches...</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
     <div className="App">
-      <h1>Hello from Go + React + Koyeb!</h1>
-      <p>This is served from a React application.</p>
-      <div>
-        <h2>Message from backend:</h2>
-        <p>{message}</p>
-        <button onClick={fetchGreeting}>Refresh Message</button>
-      </div>
+      <header className="header">
+        <h1>Football Results</h1>
+      </header>
+      <main className="matches-container">
+        {matches.map((match) => (
+          <div key={match.id} className="match-card">
+            <div className="league">{match.league}</div>
+            <div className="date">{match.date}</div>
+            <div className="teams">
+              <div className="team home">{match.homeTeam}</div>
+              <div className="score">
+                {match.homeScore} - {match.awayScore}
+              </div>
+              <div className="team away">{match.awayTeam}</div>
+            </div>
+          </div>
+        ))}
+      </main>
+      <button className="refresh-btn" onClick={fetchMatches}>
+        Refresh Results
+      </button>
     </div>
   );
 }

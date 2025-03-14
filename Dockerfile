@@ -1,33 +1,14 @@
-# Use the official Golang image as a builder
-FROM golang:1.23 AS builder
+FROM node:18-alpine
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy the Go module files and download dependencies
-COPY backend/go.mod backend/go.sum ./
-RUN go mod download
+COPY package*.json ./
+RUN npm install
 
-# Copy the rest of the application
-COPY backend/ ./
+COPY . .
 
-# Build the Go application for Linux
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /app/scraper ./cmd/server
+RUN npm run build
 
-# Use a minimal image for the final container
-FROM debian:bullseye-slim
+EXPOSE 3000
 
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the built binary from the builder stage
-COPY --from=builder /app/scraper ./
-
-# Set executable permissions for the binary
-RUN chmod +x /app/scraper
-
-# Expose a port (if necessary for your application)
-EXPOSE 8080
-
-# Run the application
-CMD ["/app/scraper"]
+CMD ["npm", "start"]

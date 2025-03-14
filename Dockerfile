@@ -1,5 +1,5 @@
 # 1. Builder
-FROM golang:1.20 as builder
+FROM golang:1.21beta1 as builder
 WORKDIR /app
 
 COPY backend/go.mod backend/go.sum ./

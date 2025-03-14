@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Production build
+frontend/build/
+
+# Go binaries and debug files
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+debug
+*.test
+*.out
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db

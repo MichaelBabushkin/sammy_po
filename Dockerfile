@@ -1,21 +1,19 @@
-# Use official Go image
+# Build React frontend
+FROM node:18 AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
+
+# Build Go backend
 FROM golang:1.23
-
-# Create and switch to a working directory
 WORKDIR /app
-
-# Copy go.mod and go.sum first (for caching)
-COPY go.mod  ./
+COPY go.mod ./
 RUN go mod download
-
-# Now copy the rest of the application
 COPY . .
-
-# Build the Go binary
+COPY --from=frontend-builder /app/frontend/build ./frontend/build
 RUN go build -o main .
 
-# Expose the port the app will run on
 EXPOSE 8000
-
-# Run the application
 CMD ["./main"]

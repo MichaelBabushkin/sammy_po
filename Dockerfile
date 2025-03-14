@@ -1,17 +1,21 @@
-# 1. Builder
-FROM golang:1.24 as builder
+# Use official Go image
+FROM golang:1.23
+
+# Create and switch to a working directory
 WORKDIR /app
 
-COPY backend/go.mod backend/go.sum ./
+# Copy go.mod and go.sum first (for caching)
+COPY go.mod  ./
 RUN go mod download
 
-COPY backend/ ./
-RUN go build -o scraper ./internal/scraper
+# Now copy the rest of the application
+COPY . .
 
-# 2. Minimal runtime
-FROM debian:bullseye-slim
-WORKDIR /app
+# Build the Go binary
+RUN go build -o main .
 
-COPY --from=builder /app/scraper .
+# Expose the port the app will run on
 EXPOSE 8080
-CMD ["./scraper"]
+
+# Run the application
+CMD ["./main"]

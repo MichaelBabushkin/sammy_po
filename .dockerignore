@@ -1,11 +1,4 @@
-# Ignore these files and directories
+# .dockerignore
 .git
-.github
-backend/bin
-backend/pkg
-node_modules
-*.log
-npm-debug.log
-.env
-.env.local
-.DS_Store
+.gitignore
+README.md

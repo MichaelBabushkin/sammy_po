@@ -1,14 +1,17 @@
-FROM node:18-alpine
-
+# 1. Builder
+FROM golang:1.20 as builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
 
-COPY . .
+COPY backend/ ./
+RUN go build -o scraper ./internal/scraper
 
-RUN npm run build
+# 2. Minimal runtime
+FROM debian:bullseye-slim
+WORKDIR /app
 
-EXPOSE 3000
-
-CMD ["npm", "start"]
+COPY --from=builder /app/scraper .
+EXPOSE 8080
+CMD ["./scraper"]

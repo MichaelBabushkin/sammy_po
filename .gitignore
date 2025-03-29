@@ -3,7 +3,7 @@ node_modules/
 frontend/node_modules/
 
 # Production build
-frontend/build/
+# frontend/build/
 
 # Go binaries and debug files
 *.exe

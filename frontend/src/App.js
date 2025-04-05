@@ -89,6 +89,125 @@ function App() {
     return "scheduled";
   };
 
+  // Helper function to generate iCalendar string for a match
+  const createCalendarEvent = (match) => {
+    if (!match.status || !match.status.utcTime) {
+      return null;
+    }
+
+    try {
+      // Parse match time
+      const startTime = new Date(match.status.utcTime);
+
+      // End time (assume matches are 2 hours)
+      const endTime = new Date(startTime);
+      endTime.setHours(endTime.getHours() + 2);
+
+      // Format dates for iCalendar
+      const formatDate = (date) => {
+        return date.toISOString().replace(/-|:|\.\d+/g, "");
+      };
+
+      const start = formatDate(startTime);
+      const end = formatDate(endTime);
+
+      // Create event title and description
+      const title = `${match.home?.name || "Home"} vs ${
+        match.away?.name || "Away"
+      }`;
+      const description = `${
+        match.tournament?.name || "Israeli League"
+      } match at Sammy Ofer Stadium`;
+      const location = "Sammy Ofer Stadium, Haifa, Israel";
+
+      // Generate iCalendar format
+      const icsData = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        `DTSTART:${start}`,
+        `DTEND:${end}`,
+        `SUMMARY:${title}`,
+        `DESCRIPTION:${description}`,
+        `LOCATION:${location}`,
+        "END:VEVENT",
+        "END:VCALENDAR",
+      ].join("\n");
+
+      // Convert to data URI for download
+      const dataUri = `data:text/calendar;charset=utf-8,${encodeURIComponent(
+        icsData
+      )}`;
+
+      return {
+        icsData,
+        dataUri,
+        googleCalendarUrl: createGoogleCalendarUrl(
+          match,
+          startTime,
+          endTime,
+          title,
+          description,
+          location
+        ),
+      };
+    } catch (error) {
+      console.error("Error creating calendar event:", error);
+      return null;
+    }
+  };
+
+  // Create Google Calendar URL
+  const createGoogleCalendarUrl = (
+    match,
+    startTime,
+    endTime,
+    title,
+    description,
+    location
+  ) => {
+    const formatGoogleDate = (date) => {
+      return date.toISOString().replace(/-|:|\.\d+/g, "");
+    };
+
+    const googleParams = new URLSearchParams({
+      action: "TEMPLATE",
+      text: title,
+      dates: `${formatGoogleDate(startTime)}/${formatGoogleDate(endTime)}`,
+      details: description,
+      location: location,
+      sf: true,
+      output: "xml",
+    });
+
+    return `https://calendar.google.com/calendar/render?${googleParams.toString()}`;
+  };
+
+  // Add to Calendar functionality for mobile devices
+  const addToCalendar = (match) => {
+    const calendarEvent = createCalendarEvent(match);
+    if (!calendarEvent) {
+      alert("Sorry, calendar data couldn't be created for this match.");
+      return;
+    }
+
+    // Different handling for mobile vs desktop
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // For mobile - open Google Calendar (works on most devices)
+      window.open(calendarEvent.googleCalendarUrl, "_blank");
+    } else {
+      // For desktop - offer download of .ics file
+      const link = document.createElement("a");
+      link.href = calendarEvent.dataUri;
+      link.download = `match-${match.id}.ics`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
   if (loading) return <div className="loading">Loading match data...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -221,6 +340,17 @@ function App() {
                     <div className="match-round">Round {match.round}</div>
                   )}
                 </div>
+
+                {/* Add calendar button */}
+                <button
+                  className="calendar-btn"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addToCalendar(match);
+                  }}
+                >
+                  Add to Calendar
+                </button>
               </div>
             );
           })}

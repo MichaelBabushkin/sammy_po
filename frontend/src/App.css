@@ -253,6 +253,39 @@
   background-color: #003d21;
 }
 
+/* Calendar Button */
+.calendar-btn {
+  display: block;
+  margin: 10px auto 15px;
+  background-color: #1a73e8; /* Google Calendar blue */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.85rem;
+}
+
+.calendar-btn:hover {
+  background-color: #1765cc;
+}
+
+.calendar-btn:before {
+  content: "📅 ";
+  margin-right: 5px;
+}
+
+/* For touch devices - make the calendar button more prominent */
+@media (hover: none) {
+  .calendar-btn {
+    padding: 12px 20px;
+    font-size: 1rem;
+    margin: 15px auto;
+  }
+}
+
 /* Filter Controls */
 .filter-controls {
   margin-top: 15px;

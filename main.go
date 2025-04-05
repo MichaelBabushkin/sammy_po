@@ -208,7 +208,7 @@ func (c *FotmobClient) makeRequest(url string) ([]byte, error) {
 		return nil, err
 	}
 
-	req.Header.Add("x-mas", "eyJib2R5Ijp7InVybCI6Ii9hcGkvbGVhZ3Vlcz9pZD0xMjcmY2NvZGUzPUlTUiIsImNvZGUiOjE3NDMyNjY2MDA5MzgsImZvbyI6InByb2R1Y3Rpb246NDJlZWVlNmVlM2UzNmNhNDgyNmExMzkyYWIzMWE4ODk1YzNjODc0Yi11bmRlZmluZWQifSwic2lnbmF0dXJlIjoiMjRCMTJBMzg5MjRDRjdGMDMwRTA3QjQ1QkFDMjZFMDIifQ==")
+	req.Header.Add("x-mas", "eyJib2R5Ijp7InVybCI6Ii9hcGkvY3VycmVuY3kiLCJjb2RlIjoxNzQzODU2Njk1MDY0LCJmb28iOiJwcm9kdWN0aW9uOjc1Nzk5NDgzMjExZWVmYjc0NGM4NzgwNDhlZTI4ZjQ0MzExZTdkODYtdW5kZWZpbmVkIn0sInNpZ25hdHVyZSI6IjIxNUY2MDQ2RUREQTIzRjM0MjY0MjlBMkI4NThDNEYwIn0===")
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
 	
 	log.Printf("Request headers: %v", req.Header)

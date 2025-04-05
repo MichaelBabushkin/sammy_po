@@ -208,6 +208,116 @@ function App() {
     }
   };
 
+  // Add functionality to add all matches to calendar
+  const addAllMatchesToCalendar = () => {
+    if (matches.length === 0) {
+      alert("No upcoming matches to add to your calendar");
+      return;
+    }
+
+    // For mobile devices, we need to handle differently than desktop
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+      // On mobile, we'll create a calendar event for the first match
+      // and then let the user repeat the process for other matches
+      const calendarEvent = createCalendarEvent(matches[0]);
+      if (calendarEvent) {
+        // Open the Google Calendar URL for the first match
+        window.open(calendarEvent.googleCalendarUrl, "_blank");
+
+        if (matches.length > 1) {
+          setTimeout(() => {
+            alert(
+              `Added first match to calendar. There are ${
+                matches.length - 1
+              } more matches. Please repeat for each match.`
+            );
+          }, 1000);
+        }
+      }
+    } else {
+      // On desktop, create a combined iCalendar file with all events
+      const combinedICS = createCombinedCalendarEvents(matches);
+      if (combinedICS) {
+        // Download the combined .ics file
+        const link = document.createElement("a");
+        link.href = combinedICS;
+        link.download = `sammy-ofer-matches.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert("Failed to create calendar events");
+      }
+    }
+  };
+
+  // Create a combined ICS file with all matches
+  const createCombinedCalendarEvents = (matchList) => {
+    if (!matchList || matchList.length === 0) return null;
+
+    try {
+      // Start building the iCalendar content
+      let icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//SammyOfer//UpcomingMatches//EN",
+      ];
+
+      // Add each match as an event
+      for (const match of matchList) {
+        if (!match.status || !match.status.utcTime) continue;
+
+        // Parse match time
+        const startTime = new Date(match.status.utcTime);
+
+        // End time (assume matches are 2 hours)
+        const endTime = new Date(startTime);
+        endTime.setHours(endTime.getHours() + 2);
+
+        // Format dates for iCalendar
+        const formatDate = (date) =>
+          date.toISOString().replace(/-|:|\.\d+/g, "");
+        const start = formatDate(startTime);
+        const end = formatDate(endTime);
+
+        // Create event title and description
+        const title = `${match.home?.name || "Home"} vs ${
+          match.away?.name || "Away"
+        }`;
+        const description = `${
+          match.tournament?.name || "Israeli League"
+        } match at Sammy Ofer Stadium`;
+        const location = "Sammy Ofer Stadium, Haifa, Israel";
+
+        // Add this event to the calendar
+        icsContent.push(
+          "BEGIN:VEVENT",
+          `DTSTART:${start}`,
+          `DTEND:${end}`,
+          `SUMMARY:${title}`,
+          `DESCRIPTION:${description}`,
+          `LOCATION:${location}`,
+          `UID:match-${match.id}@sammyofer.com`,
+          "END:VEVENT"
+        );
+      }
+
+      // Close the calendar
+      icsContent.push("END:VCALENDAR");
+
+      // Convert to data URI for download
+      const dataUri = `data:text/calendar;charset=utf-8,${encodeURIComponent(
+        icsContent.join("\n")
+      )}`;
+      return dataUri;
+    } catch (error) {
+      console.error("Error creating combined calendar events:", error);
+      return null;
+    }
+  };
+
   if (loading) return <div className="loading">Loading match data...</div>;
   if (error) return <div className="error">{error}</div>;
 
@@ -268,93 +378,100 @@ function App() {
       <h2 className="section-title">Upcoming Matches at Sammy Ofer Stadium</h2>
 
       {matches.length > 0 ? (
-        <div className="matches-grid">
-          {matches.map((match) => {
-            const status = getMatchStatus(match);
+        <>
+          <div className="calendar-actions">
+            <button className="add-all-btn" onClick={addAllMatchesToCalendar}>
+              Add All Matches to Calendar
+            </button>
+          </div>
+          <div className="matches-grid">
+            {matches.map((match) => {
+              const status = getMatchStatus(match);
 
-            // Format date and time from the utcTime
-            let matchDate = "";
-            let matchTime = "";
+              // Format date and time from the utcTime
+              let matchDate = "";
+              let matchTime = "";
 
-            if (match.status && match.status.utcTime) {
-              const date = new Date(match.status.utcTime);
-              matchDate = date.toLocaleDateString(undefined, {
-                weekday: "short",
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              });
-              matchTime = date.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-            }
+              if (match.status && match.status.utcTime) {
+                const date = new Date(match.status.utcTime);
+                matchDate = date.toLocaleDateString(undefined, {
+                  weekday: "short",
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                });
+                matchTime = date.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+              }
 
-            return (
-              <div key={match.id} className="match-card upcoming">
-                <div className="match-header">
-                  <div className="match-date">{matchDate}</div>
-                  <div className={`match-status ${status}`}>
-                    {status === "live" ? (
-                      <span className="live-indicator">LIVE</span>
-                    ) : status === "finished" ? (
-                      "FINAL"
-                    ) : (
-                      matchTime
+              return (
+                <div key={match.id} className="match-card upcoming">
+                  <div className="match-header">
+                    <div className="match-date">{matchDate}</div>
+                    <div className={`match-status ${status}`}>
+                      {status === "live" ? (
+                        <span className="live-indicator">LIVE</span>
+                      ) : status === "finished" ? (
+                        "FINAL"
+                      ) : (
+                        matchTime
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Move the upcoming badge after the header */}
+                  <div className="upcoming-badge">Upcoming</div>
+
+                  <div className="match-teams">
+                    <div className="team home">
+                      <span className="team-name">
+                        {match.home?.name || "Home Team"}
+                      </span>
+                      <span className="team-score">
+                        {status !== "scheduled" ? match.home?.score || 0 : ""}
+                      </span>
+                    </div>
+
+                    <div className="match-separator">
+                      {status === "scheduled" ? "vs" : "-"}
+                    </div>
+
+                    <div className="team away">
+                      <span className="team-score">
+                        {status !== "scheduled" ? match.away?.score || 0 : ""}
+                      </span>
+                      <span className="team-name">
+                        {match.away?.name || "Away Team"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="match-footer">
+                    <div className="match-competition">
+                      {match.tournament?.name || "Israeli League"}
+                    </div>
+                    {match.round && (
+                      <div className="match-round">Round {match.round}</div>
                     )}
                   </div>
+
+                  {/* Add calendar button */}
+                  <button
+                    className="calendar-btn"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      addToCalendar(match);
+                    }}
+                  >
+                    Add to Calendar
+                  </button>
                 </div>
-
-                {/* Move the upcoming badge after the header */}
-                <div className="upcoming-badge">Upcoming</div>
-
-                <div className="match-teams">
-                  <div className="team home">
-                    <span className="team-name">
-                      {match.home?.name || "Home Team"}
-                    </span>
-                    <span className="team-score">
-                      {status !== "scheduled" ? match.home?.score || 0 : ""}
-                    </span>
-                  </div>
-
-                  <div className="match-separator">
-                    {status === "scheduled" ? "vs" : "-"}
-                  </div>
-
-                  <div className="team away">
-                    <span className="team-score">
-                      {status !== "scheduled" ? match.away?.score || 0 : ""}
-                    </span>
-                    <span className="team-name">
-                      {match.away?.name || "Away Team"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="match-footer">
-                  <div className="match-competition">
-                    {match.tournament?.name || "Israeli League"}
-                  </div>
-                  {match.round && (
-                    <div className="match-round">Round {match.round}</div>
-                  )}
-                </div>
-
-                {/* Add calendar button */}
-                <button
-                  className="calendar-btn"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    addToCalendar(match);
-                  }}
-                >
-                  Add to Calendar
-                </button>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
         <div className="no-matches">
           No upcoming matches scheduled at Sammy Ofer Stadium

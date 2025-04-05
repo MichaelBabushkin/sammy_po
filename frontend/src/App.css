@@ -277,6 +277,45 @@
   margin-right: 5px;
 }
 
+/* Calendar Actions */
+.calendar-actions {
+  margin: 0 auto 20px;
+  text-align: center;
+}
+
+.add-all-btn {
+  background-color: #1a73e8; /* Google Calendar blue */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.add-all-btn:hover {
+  background-color: #1765cc;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.add-all-btn:before {
+  content: "📅 ";
+  margin-right: 8px;
+}
+
+/* Enhanced for mobile */
+@media (hover: none) {
+  .add-all-btn {
+    padding: 14px 22px;
+    margin-bottom: 25px;
+    width: 80%;
+    max-width: 300px;
+  }
+}
+
 /* For touch devices - make the calendar button more prominent */
 @media (hover: none) {
   .calendar-btn {

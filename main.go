@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -287,6 +289,39 @@ func FilterHaifaHomeMatches(matches []interface{}) []interface{} {
 	return append(upcomingMatches, pastMatches...)
 }
 
+// Add a new function for refreshing the token
+func refreshToken() {
+	log.Println("Refreshing token...")
+	
+	// Ensure responses directory exists
+	os.MkdirAll("responses", 0755)
+	
+	// Run the scraper directly
+	cmd := exec.Command("go", "run", "tools/fotmob_scraper.go", "--silent")
+	cmd.Dir = "." // Run from the root directory
+	
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("Error refreshing token: %v", err)
+		log.Printf("Output: %s", string(output))
+	} else {
+		log.Println("Token refreshed successfully")
+	}
+}
+
+// Add a function to check if token is fresh
+func isTokenFresh() bool {
+	// Check if the token file exists and is fresh
+	tokenFile := filepath.Join("responses", "x-mas-token.txt")
+	info, err := os.Stat(tokenFile)
+	if err != nil {
+		return false // File doesn't exist or can't be accessed
+	}
+	
+	// Check if the file is less than 2 minutes old
+	return time.Since(info.ModTime()) < 2*time.Minute
+}
+
 func init() {
 	// Load .env file
 	godotenv.Load()
@@ -309,6 +344,12 @@ func main() {
 		}
 
 		log.Println("Received request for Sammy Ofer matches")
+		
+			// Check if the token needs refreshing
+		if !isTokenFresh() {
+			log.Println("Token is stale, refreshing...")
+			refreshToken()
+		}
 		
 		// Record the start time for performance tracking
 		startTime := time.Now()

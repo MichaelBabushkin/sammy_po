@@ -65,6 +65,11 @@ func (c *FotmobClient) makeRequest(url string) ([]byte, error) {
 	// Get the headers from our API package
 	headers := api.GetFotmobHeaders()
 	
+	// Log the token info including timestamp
+	log.Printf("Using x-mas token: %s... (scraped at: %s)", 
+		truncateToken(headers.XMasToken), 
+		time.Unix(headers.ScrapedAt, 0).Format(time.RFC3339))
+	
 	// Add the headers to the request
 	req.Header.Add("x-mas", headers.XMasToken)
 	req.Header.Add("User-Agent", headers.UserAgent)
@@ -88,6 +93,14 @@ func (c *FotmobClient) makeRequest(url string) ([]byte, error) {
 	defer resp.Body.Close()
 	
 	return ioutil.ReadAll(resp.Body)
+}
+
+// Helper function to truncate token for logging
+func truncateToken(token string) string {
+	if len(token) > 30 {
+		return token[:30] + "..."
+	}
+	return token
 }
 
 func (c *FotmobClient) FetchIsraeliLeagueData() (map[string]interface{}, error) {
@@ -297,13 +310,19 @@ func main() {
 
 		log.Println("Received request for Sammy Ofer matches")
 		
+		// Record the start time for performance tracking
+		startTime := time.Now()
+		
 		fotmobClient := NewFotmobClient()
 		matchesData, err := fotmobClient.FetchIsraeliLeagueMatches()
 
 		if err != nil {
+			log.Printf("Error fetching Fotmob matches: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		
+		log.Printf("Successfully fetched matches data in %v", time.Since(startTime))
 		
 		matchesArr, ok := matchesData.([]interface{})
 		if !ok {
@@ -311,10 +330,12 @@ func main() {
 			return
 		}
 		
+		log.Printf("Processing %d total matches from API", len(matchesArr))
 		filteredMatches := FilterHaifaHomeMatches(matchesArr)
 		
 		// Get all upcoming matches
 		now := time.Now().UTC()
+		log.Printf("Current time (UTC): %s", now.Format(time.RFC3339))
 		upcomingMatches := []interface{}{}
 		
 		for _, match := range filteredMatches {
@@ -353,11 +374,16 @@ func main() {
 			
 			// Include only future matches
 			if matchTime.After(now) {
+				log.Printf("Found upcoming match: %s vs %s on %s", 
+					getTeamName(matchMap, "home"),
+					getTeamName(matchMap, "away"),
+					matchTime.Format(time.RFC1123))
 				upcomingMatches = append(upcomingMatches, match)
 			}
 		}
 		
-		log.Printf("Found %d upcoming Sammy Ofer matches", len(upcomingMatches))
+		log.Printf("Found %d upcoming Sammy Ofer matches (request took %v)", 
+			len(upcomingMatches), time.Since(startTime))
 		
 		w.Header().Set("Cache-Control", "max-age=3600") // Cache for 1 hour
 		json.NewEncoder(w).Encode(upcomingMatches)
@@ -395,4 +421,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+// Helper function to get team name from match object
+func getTeamName(matchMap map[string]interface{}, side string) string {
+	if teamData, ok := matchMap[side]; ok {
+		if team, ok := teamData.(map[string]interface{}); ok {
+			if name, ok := team["name"].(string); ok {
+				return name
+			}
+		}
+	}
+	return side
 }

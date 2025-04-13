@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+// TokenStatus tracks information about the x-mas token
+type TokenStatus struct {
+	Token     string    `json:"token"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Timestamp int64     `json:"timestamp"`
+}
+
 // FotmobHeaders holds the headers needed for Fotmob API requests
 type FotmobHeaders struct {
 	XMasToken   string            `json:"x-mas"`
@@ -16,7 +23,11 @@ type FotmobHeaders struct {
 	Accept      string            `json:"Accept"`
 	AllHeaders  map[string]string `json:"-"`
 	LastUpdated time.Time         `json:"-"`
+	ScrapedAt   int64             `json:"_scrapedAt"`
 }
+
+// Global settings for token expiration
+var tokenExpirationTime = 24 * time.Hour // Default to 24 hours
 
 // GetFotmobHeaders loads the headers from the currency_api_headers.json file
 func GetFotmobHeaders() *FotmobHeaders {
@@ -43,10 +54,29 @@ func GetFotmobHeaders() *FotmobHeaders {
 		return getDefaultHeaders()
 	}
 	
+	// Check if timestamp exists and is fresh
+	if timestamp, ok := headers["_scrapedAt"]; ok {
+		if ts, ok := timestamp.(float64); ok {
+			scrapedAt := time.Unix(int64(ts), 0)
+			if time.Since(scrapedAt) > tokenExpirationTime {
+				log.Printf("Token is too old (scraped at %v), using default", scrapedAt)
+				return getDefaultHeaders()
+			}
+			log.Printf("Using token scraped at %v", scrapedAt)
+		}
+	}
+	
 	// Create headers object
 	result := &FotmobHeaders{
 		AllHeaders:  make(map[string]string),
 		LastUpdated: time.Now(),
+	}
+	
+	// Extract scraped timestamp
+	if scrapedAt, ok := headers["_scrapedAt"]; ok {
+		if ts, ok := scrapedAt.(float64); ok {
+			result.ScrapedAt = int64(ts)
+		}
 	}
 	
 	// Check if we have the x-mas token
@@ -86,6 +116,14 @@ func GetFotmobHeaders() *FotmobHeaders {
 	return result
 }
 
+// SetTokenExpirationTime sets how long tokens are considered valid
+func SetTokenExpirationTime(duration time.Duration) {
+	if duration > 0 {
+		tokenExpirationTime = duration
+		log.Printf("Token expiration time set to %v", duration)
+	}
+}
+
 // getDefaultHeaders returns a default set of headers
 func getDefaultHeaders() *FotmobHeaders {
 	return &FotmobHeaders{
@@ -98,5 +136,6 @@ func getDefaultHeaders() *FotmobHeaders {
 			"Accept": "application/json, text/plain, */*",
 		},
 		LastUpdated: time.Now(),
+		ScrapedAt: time.Now().Unix(),
 	}
 }

@@ -54,6 +54,10 @@ func main() {
 					currencyApiFound = true
 					fmt.Printf("\n🔍 CURRENCY API REQUEST DETECTED: %s\n", url)
 					
+					// Add timestamp to headers
+					headers["_timestamp"] = time.Now().Format(time.RFC3339)
+					headers["_scrapedAt"] = time.Now().Unix()
+					
 					// Save currency API headers to a separate file
 					currencyHeaders, _ := json.MarshalIndent(headers, "", "  ")
 					err := os.WriteFile("responses/currency_api_headers.json", currencyHeaders, 0644)
